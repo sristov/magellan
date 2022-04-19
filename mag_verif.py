@@ -1,6 +1,6 @@
-# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn 1.0.
+# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn.
 # MaGelLAn is an open source software and it is free for non-commercial use, as long as it is properly referenced.
-# Authors are Ino Curik and Strahil Ristov
+# Authors are Ino Curik, Dalibor Hršak and Strahil Ristov
 
 import sys
 import os.path
@@ -85,38 +85,40 @@ MissingFatherMap = {}
 MissingMotherMap = {}
 AddedMalesList = []
 AddedFemalesList = []
+ConflictingFatherList = []
+ConflictingMotherList = []
+FemaleFathersList = []
+MaleMothersList = []
+YoungerFathersList = []
+YoungerMothersList = []
 
 for individual in IDlist:
     if FatherMap[individual] == individual:
-        error_log = open('ERROR_ALERT.TXT', 'w')
-        error_log.write('Process is terminated. Please correct the following error:\n')
-        error_log.write('Individual ' + individual + 'is repeated as its father.\n')
-        print("error1, please see ERROR_ALERT.TXT")
-        exit(31)
+        ConflictingFatherList.append(individual)
+
     if MotherMap[individual] == individual:
-        error_log = open('ERROR_ALERT.TXT', 'w')
-        error_log.write('Process is terminated. Please correct the following error:\n')
-        error_log.write('Individual ' + individual + 'is repeated as its mother.\n')
-        print("error2, please see ERROR_ALERT.TXT")
-        exit(32)
+        ConflictingMotherList.append(individual)
+
     if FatherMap[individual] != "0":
         if FatherMap[individual] in GenderMap:
             if GenderMap[FatherMap[individual]] != Male_gender:
-                error_log = open('ERROR_ALERT.TXT', 'w')
-                error_log.write('Process is terminated. Please correct the following error:\n')
-                error_log.write(
-                    "Individual " + individual + 'has a father \n' + FatherMap[individual] + 'that is defined as female.\n')
-                print("error3, please see ERROR_ALERT.TXT")
-                exit(33)
+                FemaleFathersList.append(individual)
+
     if MotherMap[individual] != "0":
         if MotherMap[individual] in GenderMap:
             if GenderMap[MotherMap[individual]] != Female_gender:
-                error_log = open('ERROR_ALERT.TXT', 'w')
-                error_log.write('Process is terminated. Please correct the following error:\n')
-                error_log.write(
-                    'Individual ' + individual + 'has a mother \n' + MotherMap[individual] + 'that is defined as male.\n')
-                print("error4, please see ERROR_ALERT.TXT")
-                exit(34)
+                MaleMothersList.append(individual)
+
+    if FatherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[FatherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[FatherMap[individual]]):
+                YoungerFathersList.append(individual)
+
+    if MotherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[MotherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[MotherMap[individual]]):
+                YoungerMothersList.append(individual)
+
     if FatherMap[individual] != "0":
         if FatherMap[individual] not in IDlist:
             if FatherMap[individual] not in MissingFatherMap:
@@ -141,6 +143,113 @@ for individual in IDlist:
                 YobMap[MotherMap[individual]] = missing_entry
                 GenderMap[MotherMap[individual]] = Female_gender
                 AddedFemalesList.append(MotherMap[individual])
+
+FatalError = False
+if len(ConflictingFatherList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Process is terminated. Please correct the following errors:\n')
+    for individual in ConflictingFatherList:
+        error_log.write('Individual ' + individual + 'is repeated as its father.\n')
+    print("error1, please see ERROR_ALERT.TXT")
+    error_log.close()
+    FatalError = True
+
+if len(ConflictingMotherList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Process is terminated. Please correct the following errors:\n')
+    for individual in ConflictingMotherList:
+        error_log.write('Individual ' + individual + 'is repeated as its mother.\n')
+    error_log.close()
+    print("error2, please see ERROR_ALERT.TXT")
+    FatalError = True
+
+if len(FemaleFathersList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Process is terminated. Please correct the following errors:\n')
+    for individual in ConflictingMotherList:
+        error_log.write('Process is terminated. Please correct the following error:\n')
+        error_log.write(
+            "Individual " + individual + 'has a father \n' + FatherMap[individual] + 'that is defined as female.\n')
+    error_log.close()
+    print("error3, please see ERROR_ALERT.TXT")
+    FatalError = True
+
+if len(MaleMothersList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Process is terminated. Please correct the following errors:\n')
+    for individual in ConflictingMotherList:
+        error_log.write('Process is terminated. Please correct the following error:\n')
+        error_log.write(
+            "Individual " + individual + 'has a mother \n' + MotherMap[individual] + 'that is defined as male.\n')
+    error_log.close()
+    print("error4, please see ERROR_ALERT.TXT")
+    FatalError = True
+
+if len(YoungerFathersList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('WARNING! Please correct the following errors:\n')
+    for individual in YoungerFathersList:
+        error_log.write(
+            'Individual ' + individual + ' has younger father ' + FatherMap[individual] + '\n')
+    error_log.close()
+    print("warning1, please see ERROR_ALERT.TXT")
+
+if len(YoungerMothersList):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('WARNING! Please correct the following errors:\n')
+    for individual in YoungerMothersList:
+        error_log.write(
+            'Individual ' + individual + ' has younger mother ' + MotherMap[individual] + '\n')
+    error_log.close()
+    print("warning2, please see ERROR_ALERT.TXT")
+
+def checkConflicts(ParentMap,GenderMap,LineType):
+    OneGenderList = [key for key, value in GenderMap.items() if value == LineType]
+    ConflictMap = {}
+    for individual in OneGenderList:
+        
+        ID_string = individual
+        LineageList = [individual]
+        while ParentMap[ID_string] != '0':
+            if ParentMap[ID_string] in LineageList:
+                print("oops! conflict: ",LineageList)
+                ConflictMap[individual] = ParentMap[ID_string]
+                LineageList.append(ParentMap[ID_string])
+                break
+            ID_string = ParentMap[ID_string]
+            LineageList.append(ID_string)
+        print(LineageList)
+
+    return ConflictMap
+
+FatherLineConflicts = checkConflicts(FatherMap,GenderMap,Male_gender)
+MotherLineConflicts = checkConflicts(MotherMap,GenderMap,Female_gender)
+
+if len(FatherLineConflicts):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Please correct the following errors:\n')
+    for individual in FatherLineConflicts:
+        error_log.write("Male individual {0} has a repeated ancestor {1} in its lineage:\n".format(
+            individual, FatherLineConflicts[individual]))
+        error_log.write("\n\n")
+    error_log.close()
+    print("error5, please see ERROR_ALERT.TXT")
+    FatalError = True
+
+if len(MotherLineConflicts):
+    error_log = open('ERROR_ALERT.TXT', 'w')
+    error_log.write('Please correct the following errors:\n')
+    for individual in MotherLineConflicts:
+        error_log.write("Female individual {0} has a repeated ancestor {1} in its lineage:\n".format(
+            individual, MotherLineConflicts[individual]))
+        error_log.write("\n\n")
+    print("error6, please see ERROR_ALERT.TXT")
+    error_log.close()
+    FatalError = True
+
+if FatalError:
+    exit(30)
+
 for key in MissingFatherMap:
     FatherMap[MissingFatherMap[key]] = '0'
 for key in MissingMotherMap:
@@ -164,8 +273,10 @@ if len(AddedMalesList) or len(AddedFemalesList) or len(MissingFatherMap) or len(
         corr_log.write('removed unique and non-defined female ancestors:\n')
         for i in MissingMotherMap:
             corr_log.write('     ' + i + '\n')
+    corr_log.close()
 
 out_conflicts = open('OutputVerif_ConflictingIndividuals.txt', 'w')
+out_conflicts_detail = open('OutputVerif_DetailedConflictingIndividuals.txt', 'w')
 out_summary = open('OutputVerif_Summary.txt', 'w')
 out_misplaced = open('OutputVerif_MisplacedBranches.txt', 'w')
 
@@ -174,9 +285,11 @@ MismatchCount = 0
 InformativeList = []
 UnitsInConflictsList = []
 ConflictCountMap = {}
+ConflictIndividualsMap = {}
 
 for individual in HaplotypedList:
     ConflictCountMap[individual] = 0
+    ConflictIndividualsMap[individual] = []
 ConflictMatrix = [[0 for i in range(len(HaplotypedList))] for j in range(len(HaplotypedList))]
 
 for i in range(len(HaplotypedList)):
@@ -212,6 +325,10 @@ for i in range(len(HaplotypedList)):
                     else:
                         ConflictCountMap[MotherLine1[0]] += 1
                         ConflictCountMap[MotherLine2[0]] += 1
+                        if MotherLine1[k] not in ConflictIndividualsMap[MotherLine1[0]]:
+                            ConflictIndividualsMap[MotherLine1[0]].append(MotherLine1[k])
+                        if MotherLine2[l] not in ConflictIndividualsMap[MotherLine2[0]]:
+                            ConflictIndividualsMap[MotherLine2[0]].append(MotherLine2[l])
                         ConflictMatrix[i][j] = 1
                         ConflictMatrix[j][i] = 1
                         MismatchCount += 1
@@ -225,6 +342,7 @@ for i in range(len(HaplotypedList)):
                 break
 if len(UnitsInConflictsList) > 0:
     out_conflicts.write('ID of the conflicting unit; Haplotype; No. of conflicts\n\n')
+    out_conflicts_detail.write('ID of the conflicting unit; Haplotype; Conflicting members\n\n')
 else:
     out_conflicts.write('There are no conflicts in the pedigree.\n')
 
@@ -247,6 +365,11 @@ while True:
     ConflictCountDecMap[maxConflictUnit] = 0
     out_conflicts.write(
         maxConflictUnit + '; ' + HaplotypeMap[maxConflictUnit] + '; ' + '%s' % ConflictCountMap[maxConflictUnit] + '\n')
+    out_conflicts_detail.write(
+        maxConflictUnit + '; ' + HaplotypeMap[maxConflictUnit])
+    for unit in ConflictIndividualsMap[maxConflictUnit]:
+        out_conflicts_detail.write('; {0}'.format(unit))
+    out_conflicts_detail.write('\n')
     for j in range(len(HaplotypedList)):
         if ConflictMatrix[maxConflictUnitIndex][j] == 1:
             ConflictCountDecMap[HaplotypedList[j]] -= 1
@@ -314,3 +437,8 @@ if len(ConflictingUnitsList) > 0:
     out_summary.write('HC index = ' + '%s' % HC + '\n' + 'IC index = ' + '%s' % IC + '\n' + 'MISPLACED index = ' + '%s' % MISPLACED + '\n')
 else:
     out_summary.write('There are no conflicts in the pedigree.\n')
+
+out_conflicts.close()
+out_conflicts_detail.close()
+out_summary.close()
+out_misplaced.close()

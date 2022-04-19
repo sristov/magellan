@@ -1,6 +1,6 @@
-# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn 1.0.
+# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn.
 # MaGelLAn is an open source software and it is free for non-commercial use, as long as it is properly referenced.
-# Authors are Ino Curik and Strahil Ristov
+# Authors are Ino Curik, Dalibor Hršak and Strahil Ristov
 
 import sys
 import os.path
@@ -82,6 +82,7 @@ while True:
             HaplotypedList.append(lineparts[ID_column])
             if not lineparts[HAP_column] in HaplotypeNamesList:
                 HaplotypeNamesList.append(lineparts[HAP_column])
+input1.close()
 
 # checking for errors in pedigree: cycles, gender consistency, and non-existent ancestors
 MissingFatherMap = {}
@@ -106,6 +107,14 @@ for individual in IDlist:
             if GenderMap[MotherMap[individual]] != Female_gender:
                 print("Error: gender inconsistency, please use mag_verif to correct errors.\n")
                 exit(34)
+    if FatherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[FatherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[FatherMap[individual]]):
+                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
+    if MotherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[MotherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[MotherMap[individual]]):
+                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
     if FatherMap[individual] != "0":
         if FatherMap[individual] not in IDlist:
             if FatherMap[individual] not in MissingFatherMap:
@@ -153,6 +162,7 @@ if len(AddedMalesList) or len(AddedFemalesList) or len(MissingFatherMap) or len(
         corr_log.write('removed unique and non-defined female ancestors:\n')
         for i in MissingMotherMap:
             corr_log.write('     ' + i + '\n')
+    corr_log.close()
 
 # test for conflicting haplotypes
 for i in range(len(HaplotypedList)):
@@ -186,6 +196,7 @@ if os.path.isfile('reference_years.txt'):
     input2 = open('reference_years.txt', 'r')
     FirstRefYear = int(input2.readline())
     LastRefYear = int(input2.readline())
+    input2.close()
 
 ReferencePopulationList = []
 FemalesInReferencePopulationList = []
@@ -308,6 +319,9 @@ for fdam in FounderDamLineWithOnlyMalesInRefPopList:
     else:
         damlineout1.write('\n')
 
+damlineout1.close()
+damlineout2.close()
+
 damlineout3 = open('OutputStat_DamLineMembershipAllInRefPop.txt', 'w')
 damlineout3.write('founder dam:individual in dam line and in reference population\n')
 damlineout4 = open('OutputStat_DamLineMembershipFemaleOnlyInRefPop.txt', 'w')
@@ -328,3 +342,7 @@ for fdam in sorted(DamLineMembershipCountMap, key=DamLineMembershipCountMap.__ge
                 damlineout3.write(fdam + ':' + individual + '\n')
                 if GenderMap[individual] == Female_gender:
                     damlineout4.write(fdam + ':' + individual + '\n')
+damlineout3.close()
+damlineout4.close()
+damlineout5.close()
+damlineout6.close()

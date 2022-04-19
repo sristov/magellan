@@ -1,26 +1,29 @@
 # This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn 1.0.
 # MaGelLAn is an open source software and it is free for non-commercial use, as long as it is properly referenced.
-# Authors are Ino Curik and Strahil Ristov
+# Authors are Ino Curik, Dalibor Hršak and Strahil Ristov
 
 import sys
 import os.path
+import argparse
+from fast_sampler import fastSampler
 
-if len(sys.argv) > 1:
-    if os.path.isfile(sys.argv[1]):
-        input1 = open(sys.argv[1], 'r')
-    else:
-        print(sys.argv[1], " does not exist\n")
-        exit(1)
+parser = argparse.ArgumentParser()
+parser.add_argument('--filename', dest='filename', default='pdg_in.csv', help='input pedigree file')
+parser.add_argument('--K', dest='HowManyToSequence', default=100, type=int, help='number of nodes to choose')
+parser.add_argument('--method', dest='method', default='greedy', help='Fast sampling method.')
+args = parser.parse_args()
+
+if os.path.isfile(args.filename):
+    input1 = open(args.filename, 'r')
 else:
-    if os.path.isfile("pdg_in.csv"):
-        input1 = open('pdg_in.csv', 'r')
-    else:
-        print("pdg_in.csv does not exist\n")
-        exit(1)
+    print(args.filename, " does not exist\n")
+    exit(1)
+
+method = args.method
 
 FirstRefYear = 1970  # default years of birth for reference population; used if reference_years.txt file is not present
 LastRefYear = 2015
-HowManyToSequence = 100  # default number of sequencings; used if planned_number_of_sequencings.txt file is not present
+HowManyToSequence = args.HowManyToSequence  # default number of sequencings; used if planned_number_of_sequencings.txt file is not present
 
 Female_gender = "2"
 Male_gender = "1"
@@ -92,6 +95,7 @@ while True:
             AvailableMap[lineparts[ID_column]] = '1'
         else:
             AvailableMap[lineparts[ID_column]] = '0'
+input1.close()
 
 # checking for errors in pedigree: cycles, gender consistency, and non-existent ancestors
 MissingFatherMap = {}
@@ -116,6 +120,14 @@ for individual in IDlist:
             if GenderMap[MotherMap[individual]] != Female_gender:
                 print("Error: gender inconsistency, please use mag_verif to correct errors.\n")
                 exit(34)
+    if FatherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[FatherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[FatherMap[individual]]):
+                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
+    if MotherMap[individual] != "0":
+        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[MotherMap[individual]] != 'MISSING_YEAR'):
+            if int(YobMap[individual]) < int(YobMap[MotherMap[individual]]):
+                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
     if FatherMap[individual] != "0":
         if FatherMap[individual] not in IDlist:
             if FatherMap[individual] not in MissingFatherMap:
@@ -163,6 +175,7 @@ if len(AddedMalesList) or len(AddedFemalesList) or len(MissingFatherMap) or len(
         corr_log.write('removed unique and non-defined female ancestors:\n')
         for i in MissingMotherMap:
             corr_log.write('     ' + i + '\n')
+    corr_log.close()
 
 # test for conflicting haplotypes
 for i in range(len(HaplotypedList)):
@@ -196,6 +209,7 @@ if os.path.isfile('reference_years.txt'):
     input2 = open('reference_years.txt', 'r')
     FirstRefYear = int(input2.readline())
     LastRefYear = int(input2.readline())
+    input2.close()
 
 ReferencePopulationList = []
 FemalesInReferencePopulationList = []
@@ -222,6 +236,7 @@ FounderDamLineInRefPopList = []
 FounderDamLineWithSampledFemaleInRefPopList = []
 FounderDamLineWithOnlyMalesInRefPopList = []
 IndividualToFounderDamMap = {}
+DamLineAllInPopCountMap = {}
 DamLineAllInRefPopCountMap = {}
 DamLineFemaleInRefPopCountMap = {}
 DamLineHaplotypeMap = {}
@@ -241,8 +256,18 @@ for individual in IDlist:
             IndividualsMissingFounderDamInRefPopCount += 1
 
 for i in FounderDamsList:
+    DamLineAllInPopCountMap[i] = 0
     DamLineAllInRefPopCountMap[i] = 0
     DamLineFemaleInRefPopCountMap[i] = 0
+
+# Count total population in each damline
+for individual in IDlist:
+    current = IndividualToFounderDamMap[individual]
+    if current == '0':
+        continue
+    DamLineAllInPopCountMap[current] += 1
+
+
 for individual in ReferencePopulationList:
     current = IndividualToFounderDamMap[individual]
     if current == '0':
@@ -290,10 +315,6 @@ for individual in HaplotypedList:
                 DamLinesWithFemaleSamplesInRefPopCountMap[IndividualToFounderDamMap[individual]] += 1
 
 # calculating the target number of samples per dam line
-
-if os.path.isfile('planned_number_of_sequencings.txt'):
-    input3 = open('planned_number_of_sequencings.txt', 'r')
-    HowManyToSequence = int(input3.readline())
 
 TargetPerDamLineMap = {}
 RemainingToDoPerDamLineMap = {}
@@ -392,12 +413,14 @@ for dam in MixedList:
     if dam not in RemainingToDoPerDamLineMap:
         RemainingToDoPerDamLineMap[dam] = 0
     output1.write(dam + ' ->  in ref.pop.: %s   targ: %s   prev: %s  todo:%s\n' % (DamLineAllInRefPopCountMap[dam], TargetPerDamLineMap[dam], DamLinesWithSamplesInRefPopCountMap[dam], RemainingToDoPerDamLineMap[dam]))
+
 if nonassigned > 0:
     output1.write('\nThere are %s remaining non-assigned planned samplings\n' % IntermediateSum)
     output1.write('The list of %s individuals in reference population that can be sampled but that do not have the founder dam:\n' % count)
     for individual in IndividualsMissingFounderDamList:
         if individual in ReferencePopulationList:
             output1.write(individual + '\n')
+output1.close()
 
 # calculating the available number of samples per dam line (out of the target number of samples)
 
@@ -438,7 +461,7 @@ if AvailableDifferenceCount > 0:
             output2.write('  REMAINING AVAILABLE: %s\n' % (AvailablePerDamLineCountMap[dam] - RemainingToDoAvailablePerDamLineMap[dam]))
         else:
             output2.write('\n')
-
+    output2.close()
 
 # determining individuals for sampling
 
@@ -460,53 +483,76 @@ def distanceInFounderDamLine(first_id, second_id):
             if MotherLine2[l] == MotherLine1[k]:
                 return k + l
 
+PercentageOfTotalPopMap = {}
+PercentageOfRefPopMap = {}
 output3 = open('OutputSampl_IndividualsForSampling.txt', 'w')
-for dam in MixedList:
-    CountDown = RemainingToDoAvailablePerDamLineMap[dam]
-    if CountDown == 0:
-        continue
-    CandidateList = []
-    PreviousList = []
-    for individual in ReferencePopulationList:
-        if IndividualToFounderDamMap[individual] == dam:
-            if AvailableMap[individual] == '1':
-                if individual in HaplotypedList:
-                    PreviousList.append(individual)
+output3.write('Selected individuals per damline:\n\n')
+if HAP_column == -1:
+    chosen = fastSampler(MotherMap,ReferencePopulationList,IndividualToFounderDamMap,HowManyToSequence,RemainingToDoAvailablePerDamLineMap,method)
+    for dam in chosen:
+        PercentageOfTotalPopMap[dam] = (DamLineAllInPopCountMap[dam] / len(IDlist)) * 100
+        PercentageOfRefPopMap[dam] = (DamLineAllInRefPopCountMap[dam] / len(ReferencePopulationList)) * 100
+        output3.write('founder dam {0} : '.format(dam))
+        for individual in chosen[dam]:
+            output3.write(individual + ', ')
+        output3.write('\n\n')
+else:
+    for dam in MixedList:
+        CountDown = RemainingToDoAvailablePerDamLineMap[dam]
+        if CountDown == 0:
+            continue
+        CandidateList = []
+        PreviousList = []
+        for individual in ReferencePopulationList:
+            if IndividualToFounderDamMap[individual] == dam:
+                if AvailableMap[individual] == '1':
+                    if individual in HaplotypedList:
+                        PreviousList.append(individual)
+                    else:
+                        CandidateList.append(individual)
+        if len(PreviousList) == 0:
+            Distance = 0
+            TopCandidate = None
+            for individual in CandidateList:
+                SumDistance = 0
+                for ind_prev in CandidateList:
+                    SumDistance += distanceInFounderDamLine(individual, ind_prev)
+                if Distance != 0:
+                    if SumDistance <= Distance:
+                        Distance = SumDistance
+                        TopCandidate = individual
                 else:
-                    CandidateList.append(individual)
-    if len(PreviousList) == 0:
-        Distance = 0
-        TopCandidate = None
-        for individual in CandidateList:
-            SumDistance = 0
-            for ind_prev in CandidateList:
-                SumDistance += distanceInFounderDamLine(individual, ind_prev)
-            if Distance != 0:
-                if SumDistance <= Distance:
+                    TopCandidate = individual
+            PreviousList.append(TopCandidate)
+            CandidateList.remove(TopCandidate)
+            CountDown -= 1
+        while CountDown > 0:
+            Distance = 0
+            TopCandidate = None
+            for individual in CandidateList:
+                SumDistance = 0
+                for ind_prev in PreviousList:
+                    SumDistance += distanceInFounderDamLine(individual, ind_prev)
+                if SumDistance >= Distance:
                     Distance = SumDistance
                     TopCandidate = individual
-            else:
-                TopCandidate = individual
-        PreviousList.append(TopCandidate)
-        CandidateList.remove(TopCandidate)
-        CountDown -= 1
-    while CountDown > 0:
-        Distance = 0
-        TopCandidate = None
-        for individual in CandidateList:
-            SumDistance = 0
-            for ind_prev in PreviousList:
-                SumDistance += distanceInFounderDamLine(individual, ind_prev)
-            if SumDistance >= Distance:
-                Distance = SumDistance
-                TopCandidate = individual
-        PreviousList.append(TopCandidate)
-        CandidateList.remove(TopCandidate)
-        CountDown -= 1
-    output3.write('founder dam %s : ' % dam)
-    for individual in PreviousList:
-        if individual not in HaplotypedList:
-            output3.write(individual + ', ')
-    output3.write('\n\n')
+            PreviousList.append(TopCandidate)
+            CandidateList.remove(TopCandidate)
+            CountDown -= 1
+        PercentageOfTotalPopMap[dam] = (DamLineAllInPopCountMap[dam] / len(IDlist)) * 100
+        PercentageOfRefPopMap[dam] = (DamLineAllInRefPopCountMap[dam] / len(ReferencePopulationList)) * 100
+        output3.write('founder dam {0} : '.format(dam))
+        for individual in PreviousList:
+            if individual not in HaplotypedList:
+                output3.write(individual + ', ')
+        output3.write('\n\n')
 
-
+output3.write('Percentages of damlines for sampling in total population:\n')
+for dam in sorted(PercentageOfTotalPopMap, key=PercentageOfTotalPopMap.__getitem__, reverse=True):
+    output3.write("dam {0} : {1:.2f} %\n".format(dam,PercentageOfTotalPopMap[dam]))
+output3.write('\n\n')
+output3.write('Percentages of damlines for sampling in reference population:\n')
+for dam in sorted(PercentageOfRefPopMap, key=PercentageOfRefPopMap.__getitem__, reverse=True):
+    output3.write("dam {0} : {1:.2f} %\n".format(dam,PercentageOfRefPopMap[dam]))
+output3.write('\n\n')
+output3.close()
