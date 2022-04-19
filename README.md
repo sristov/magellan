@@ -1,8 +1,8 @@
-# Maternal Genealogy Lineage Analyser - MaGelLAn.
+# Maternal Genealogy Lineage Analyser - MaGelLAn v1.5.0.
 
 Authors: Ino Čurik, Dalibor Hršak and Strahil Ristov
 
-Software for processing and analysis of the pedigree data with emphasis on the maternal lineage and mitochondrial DNA information. In version 1.0 MaGelLAn is a suite of four principal Python scripts (modules): *mag_verif*, *mag_stat*, *mag_calc* and *mag_sampl*, as well as two auxiliary scripts: *recode.py* and *print_line.py*. A detailed description of the main MaGelLAn modules functionality can be found in the paper:
+Software for processing and analysis of the pedigree data with emphasis on the maternal lineage and mitochondrial DNA information. In version 1.5 MaGelLAn is a suite of four principal Python scripts (modules): *mag_verif*, *mag_stat*, *mag_calc* and *mag_sampl*, as well as two auxiliary scripts: *recode.py* and *print_line.py*. A detailed description of the main MaGelLAn modules functionality can be found in the paper:
 
 MaGelLAn 1.0: A software to facilitate quantitative and population genetic analysis of maternal inheritance combining molecular and pedigree information
 S. Ristov, V. Brajković, V. Cubric Curik, I. Michieli, I. Curik,
@@ -65,14 +65,14 @@ Id101,Id100,Id102,2005,2,hap1,1,
 Id102,0,0,2001,2,hap1,0,
 ```
 
-<u>Additional input files are:</u>
+Additional input files are:
 
 **reference_years.txt** - stores the first and the last year of birth for the individuals included in
 the reference population; formatted as two numbers in two lines; used in modules *mag_ stat*,
 *mag_calc* and *mag_sampl*  
 
 **planned_number_of_sequencings.txt** - stores the number of planned sequencings; formatted
-as one number in a single line; exclusive use in module *mag_sampl*  
+as one number in a single line; exclusive use in module *mag_sampl*; overrides command line keyword --K  
 
 If any of the additional files is missing, the default values (coded in the scripts) are used.
 
@@ -81,7 +81,7 @@ Optional output file:
 **autocorrection_log.txt**
 
 This file is created in all modules in case when one or more individuals in the pedigree have a
-non-empty mother or a father field, but when that ancestor is not present with an individual
+non-empty mother or father field, without that ancestor being present with an individual
 record in the pedigree. In cases when the same ancestor occurs twice or more in such a
 situation, a new record is created. If she or he is mentioned only once, the ancestor data is
 treated as an empty field. This action is performed automatically and does not affect the
@@ -181,14 +181,20 @@ Populations with Available Genealogical Data. *Diversity* **2022**, *14*, 150. <
 Otherwise, if haplotype data is present in the pedigree, the algorithm applies the slower method implemented in
 MaGelLAn 1.0.
 
+Usage:
+
+```
+python mag_sampl.py --filename <pedigree.csv> --K <planned_number_of_sequencings> --method <fast_sampling_method>
+```
+
 Input keywords:
 
 > --filename: name of the input pedigree file in CSV format (default: **pdg_in.csv**)  
 > 
-> --K: planned number of sequencings (default: 100). Same effect is obtained using the optional
-> **planned_number_of_sequencings.txt** file  
+> --K: planned number of sequencings (default: 100). Same effect is obtained using the optional input file
+> **planned_number_of_sequencings.txt**  
 > 
-> --method: desired fast sampling method when no haplotype data is available in the input pedigree,
+> --method: fast sampling method **only** in case no haplotype data is available in the input pedigree,
 > accepted options are "greedy" and "default" (default: "greedy")
 > 
 
@@ -288,7 +294,7 @@ START_YEAR and END_YEAR are omitted from the output file name if their respectiv
 
 ## Software availability
 
-MaGelLAn 1.0. source codes, pedigree examples and this help file can be downloaded from:  
+MaGelLAn v1.5.0. source codes, pedigree examples and this help file can be downloaded from:  
 
 <http://lissp.irb.hr/software/magellan-1-0/> and <https://github.com/sristov/magellan>  
 
