@@ -442,5 +442,5 @@ if increase_in_identity_founder_sires == 9999:
     output1.write('Effective sire line size = N/A \n\n')
 else:
     output1.write('Increase in identity = ' + '%s'%increase_in_identity_founder_sires + '\n')
-    output1.write('Effective sire line size = ' '%s'%(1/increase_in_identity_founder_sires) + '\n\n')
+    output1.write('Effective sire line size = ' + '%s'%(1/increase_in_identity_founder_sires) + '\n\n')
 output1.close()
