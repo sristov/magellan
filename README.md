@@ -78,7 +78,7 @@ If any of the additional files is missing, the default values (coded in the scri
 
 Optional output file:
 
-<u>autocorrection_log.txt</u>
+**autocorrection_log.txt**
 
 This file is created in all modules in case when one or more individuals in the pedigree have a
 non-empty mother or a father field, but when that ancestor is not present with an individual
