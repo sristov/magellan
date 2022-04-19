@@ -207,18 +207,15 @@ def checkConflicts(ParentMap,GenderMap,LineType):
     OneGenderList = [key for key, value in GenderMap.items() if value == LineType]
     ConflictMap = {}
     for individual in OneGenderList:
-        
         ID_string = individual
         LineageList = [individual]
         while ParentMap[ID_string] != '0':
             if ParentMap[ID_string] in LineageList:
-                print("oops! conflict: ",LineageList)
                 ConflictMap[individual] = ParentMap[ID_string]
                 LineageList.append(ParentMap[ID_string])
                 break
             ID_string = ParentMap[ID_string]
             LineageList.append(ID_string)
-        print(LineageList)
 
     return ConflictMap
 
