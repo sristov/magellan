@@ -5,10 +5,10 @@ Authors: Ino Čurik, Dalibor Hršak and Strahil Ristov
 Software for processing and analysis of the pedigree data with emphasis on the maternal lineage and mitochondrial DNA information. In version 1.5 MaGelLAn is a suite of four principal Python scripts (modules): *mag_verif*, *mag_stat*, *mag_calc* and *mag_sampl*, as well as two auxiliary scripts: *recode.py* and *print_line.py*. A detailed description of the main MaGelLAn modules functionality can be found in the paper:
 
 MaGelLAn 1.0: A software to facilitate quantitative and population genetic analysis of maternal inheritance combining molecular and pedigree information
-S. Ristov, V. Brajković, V. Cubric Curik, I. Michieli, I. Curik,
-Genetics Selection Evolution.2016, 48:65
-DOI: 10.1186/s12711-016-0242-9
-URL: <http://www.gsejournal.org/content/48/1/65>
+S. Ristov, V. Brajković, V. Cubric Curik, I. Michieli, I. Curik,  
+Genetics Selection Evolution.2016, 48:65  
+DOI: 10.1186/s12711-016-0242-9  
+URL: <http://www.gsejournal.org/content/48/1/65>  
 
 
 This software is open source software and it is free for non-commercial use, as long as it is properly referenced.
