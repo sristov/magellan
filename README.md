@@ -219,7 +219,7 @@ and, optionally, if *available* data is present:
 **OutputSampl_AvailabilityRestrictions.txt**
 
 This file lists the restrictions imposed if the available number of individuals per line is smaller
-than the target number. AvailableAllCount inncludes available and already sampled
+than the target number. AvailableAllCount includes available and already sampled
 individuals. AvailableRealCount is the number of available non-sampled individuals. DIFF is
 the difference between the target number of samplings and the number of available
 individuals per line. If there are more available individuals than the target number per line, the
