@@ -1,348 +1,219 @@
-# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn.
+# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn-v2.0demo.
 # MaGelLAn is an open source software and it is free for non-commercial use, as long as it is properly referenced.
-# Authors are Ino Curik, Dalibor Hršak and Strahil Ristov
+# Authors are Ino Curik, Dalibor Hrsak and Strahil Ristov
 
 import sys
-import os.path
+import numpy as np
+from tkinter import messagebox
 
-if len(sys.argv) > 1:
-    if os.path.isfile(sys.argv[1]):
-        input1 = open(sys.argv[1], 'r')
-    else:
-        print(sys.argv[1], " does not exist\n")
-        exit(1)
-else:
-    if os.path.isfile("pdg_in.csv"):
-        input1 = open('pdg_in.csv', 'r')
-    else:
-        print("pdg_in.csv does not exist\n")
-        exit(1)
+def mag_stat(IDlist,
+             ParentMap,
+             YobMap,
+             GenderMap,
+             HaplotypeMap,
+             HaplotypedList,
+             FirstRefYear,
+             LastRefYear,
+             Lineage,
+             mode):
 
-FirstRefYear = 1970  # default years of birth for reference population; used if reference_years.txt file is not present
-LastRefYear = 2015
+    Female_gender = "2"
+    Male_gender = "1"
 
-Female_gender = "2"
-Male_gender = "1"
-missing_entry = "0"
+    if Lineage == 'paternal':
+        Gender = Male_gender
+    elif Lineage == 'maternal':
+        Gender = Female_gender
 
-IDlist = []
-HaplotypedList = []
-HaplotypeNamesList = []
-FatherMap = {}
-MotherMap = {}
-YobMap = {}
-GenderMap = {}
-HaplotypeMap = {}
+    all_yob = np.unique(list(YobMap.values()))
+    all_yob = np.delete(all_yob, np.where(all_yob == 'MISSING_YEAR'))
+    all_yob = all_yob.astype(int)
 
-HAP_column = -1
+    if FirstRefYear == 0:
+        FirstRefYear = int(min(all_yob))
+    if LastRefYear == 0:
+        LastRefYear = int(max(all_yob))
 
-linebuffer = input1.readline()
-linebuffer.rstrip()  # NOT ALWAYS WORKING!?
-if linebuffer[len(linebuffer) - 1] == '\n':
-    linebuffer = linebuffer[:-1]
-lineparts = linebuffer.split(",")
-
-for i in range(len(lineparts)):
-    if lineparts[i] == 'ID':
-        ID_column = i
-    if lineparts[i] == 'father':
-        Father_column = i
-    if lineparts[i] == 'mother':
-        Mother_column = i
-    if lineparts[i] == 'YOB':
-        YOB_column = i
-    if lineparts[i] == 'gender':
-        GENDER_column = i
-    if lineparts[i] == 'haplotype':
-        HAP_column = i
-
-while True:
-    linebuffer = input1.readline()
-    if not linebuffer:
-        break
-    linebuffer = linebuffer.rstrip()
-    lineparts = linebuffer.split(",")
-    if lineparts[ID_column] in IDlist:
-        print("duplicate record error ID: ", lineparts[ID_column])
-    else:
-        IDlist.append(lineparts[ID_column])
-    if len(lineparts[Father_column]) == 0:
-        lineparts[Father_column] = '0'
-    FatherMap[lineparts[ID_column]] = lineparts[Father_column]
-    if len(lineparts[Mother_column]) == 0:
-        lineparts[Mother_column] = '0'
-    MotherMap[lineparts[ID_column]] = lineparts[Mother_column]
-    if len(lineparts[YOB_column]) == 0:
-        lineparts[YOB_column] = 'MISSING_YEAR'
-    YobMap[lineparts[ID_column]] = lineparts[YOB_column]
-    GenderMap[lineparts[ID_column]] = lineparts[GENDER_column]
-    if HAP_column != -1:
-        if lineparts[HAP_column]:
-            HaplotypeMap[lineparts[ID_column]] = lineparts[HAP_column]
-            HaplotypedList.append(lineparts[ID_column])
-            if not lineparts[HAP_column] in HaplotypeNamesList:
-                HaplotypeNamesList.append(lineparts[HAP_column])
-input1.close()
-
-# checking for errors in pedigree: cycles, gender consistency, and non-existent ancestors
-MissingFatherMap = {}
-MissingMotherMap = {}
-AddedMalesList = []
-AddedFemalesList = []
-
-for individual in IDlist:
-    if FatherMap[individual] == individual:
-        print("Error: cycle in record, please use mag_verif to correct errors.\n")
-        exit(31)
-    if MotherMap[individual] == individual:
-        print("Error: cycle in record, please use mag_verif to correct errors.\n")
-        exit(32)
-    if FatherMap[individual] != "0":
-        if FatherMap[individual] in GenderMap:
-            if GenderMap[FatherMap[individual]] != Male_gender:
-                print("Error: gender inconsistency, please use mag_verif to correct errors.\n")
-                exit(33)
-    if MotherMap[individual] != "0":
-        if MotherMap[individual] in GenderMap:
-            if GenderMap[MotherMap[individual]] != Female_gender:
-                print("Error: gender inconsistency, please use mag_verif to correct errors.\n")
-                exit(34)
-    if FatherMap[individual] != "0":
-        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[FatherMap[individual]] != 'MISSING_YEAR'):
-            if int(YobMap[individual]) < int(YobMap[FatherMap[individual]]):
-                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
-    if MotherMap[individual] != "0":
-        if (YobMap[individual] != 'MISSING_YEAR') and (YobMap[MotherMap[individual]] != 'MISSING_YEAR'):
-            if int(YobMap[individual]) < int(YobMap[MotherMap[individual]]):
-                print("Warning: year of birth inconsistency, please use mag_verif to correct errors.\n")
-    if FatherMap[individual] != "0":
-        if FatherMap[individual] not in IDlist:
-            if FatherMap[individual] not in MissingFatherMap:
-                MissingFatherMap[FatherMap[individual]] = individual
-            else:
-                MissingFatherMap.pop(FatherMap[individual])
-                IDlist.append(FatherMap[individual])
-                FatherMap[FatherMap[individual]] = missing_entry
-                MotherMap[FatherMap[individual]] = missing_entry
-                YobMap[FatherMap[individual]] = missing_entry
-                GenderMap[FatherMap[individual]] = Male_gender
-                AddedMalesList.append(FatherMap[individual])
-    if MotherMap[individual] != "0":
-        if MotherMap[individual] not in IDlist:
-            if MotherMap[individual] not in MissingMotherMap:
-                MissingMotherMap[MotherMap[individual]] = individual
-            else:
-                MissingMotherMap.pop(MotherMap[individual])
-                IDlist.append(MotherMap[individual])
-                FatherMap[MotherMap[individual]] = missing_entry
-                MotherMap[MotherMap[individual]] = missing_entry
-                YobMap[MotherMap[individual]] = missing_entry
-                GenderMap[MotherMap[individual]] = Female_gender
-                AddedFemalesList.append(MotherMap[individual])
-for key in MissingFatherMap:
-    FatherMap[MissingFatherMap[key]] = '0'
-for key in MissingMotherMap:
-    MotherMap[MissingMotherMap[key]] = '0'
-
-if len(AddedMalesList) or len(AddedFemalesList) or len(MissingFatherMap) or len(MissingMotherMap):
-    corr_log = open('autocorrection_log.txt', 'w')
-    if len(AddedMalesList):
-        corr_log.write('new records formed for male ancestors:\n')
-        for male in AddedMalesList:
-            corr_log.write('     ' + male + '\n')
-    if len(AddedFemalesList):
-        corr_log.write('new records formed for female ancestors:\n')
-        for female in AddedFemalesList:
-            corr_log.write('     ' + female + '\n')
-    if len(MissingFatherMap):
-        corr_log.write('removed unique and non-defined male ancestors:\n')
-        for i in MissingFatherMap:
-            corr_log.write('     ' + i + '\n')
-    if len(MissingMotherMap):
-        corr_log.write('removed unique and non-defined female ancestors:\n')
-        for i in MissingMotherMap:
-            corr_log.write('     ' + i + '\n')
-    corr_log.close()
-
-# test for conflicting haplotypes
-for i in range(len(HaplotypedList)):
-    MotherLine1 = []
-    ID_string = HaplotypedList[i]
-    MotherLine1.append(ID_string)
-    while MotherMap[ID_string] != "0":
-        ID_string = MotherMap[ID_string]
-        MotherLine1.append(ID_string)
-
-    for j in range(i+1, len(HaplotypedList)):
-        MotherLine2 = []
-        ID_string = HaplotypedList[j]
-        MotherLine2.append(ID_string)
-        while MotherMap[ID_string] != "0":
-            ID_string = MotherMap[ID_string]
-            MotherLine2.append(ID_string)
-
-        for k in range(len(MotherLine1)):
-            CommonAncestorFlag = False
-            for l in range(len(MotherLine2)):
-                if MotherLine2[l] == MotherLine1[k]:
-                    CommonAncestorFlag = True
-                    if HaplotypeMap[MotherLine1[0]] != HaplotypeMap[MotherLine2[0]]:
-                        print('Error: conflicting haplotypes, please use mag_verif to remove conflicts\n')
-                        exit(35)
-            if CommonAncestorFlag:
-                break
-
-if os.path.isfile('reference_years.txt'):
-    input2 = open('reference_years.txt', 'r')
-    FirstRefYear = int(input2.readline())
-    LastRefYear = int(input2.readline())
-    input2.close()
-
-ReferencePopulationList = []
-FemalesInReferencePopulationList = []
-for individual in IDlist:
-    if YobMap[individual] == 'MISSING_YEAR':
-        continue
-    if FirstRefYear <= int(YobMap[individual]) <= LastRefYear:
-        ReferencePopulationList.append(individual)
-        if GenderMap[individual] == Female_gender:
-            FemalesInReferencePopulationList.append(individual)
-
-FounderDamsList = []
-for individual in IDlist:
-    if MotherMap[individual] == '0':
-        if GenderMap[individual] == Female_gender:
-            FounderDamsList.append(individual)
-
-FounderDamLineInRefPopList = []
-FounderDamLineWithSampledFemaleInRefPopList = []
-FounderDamLineWithOnlyMalesInRefPopList = []
-IndividualToFounderDamMap = {}
-DamLineAllInRefPopCountMap = {}
-DamLineFemaleInRefPopCountMap = {}
-DamLineHaplotypeMap = {}
-IndividualsMissingFounderDamList = []
-IndividualsMissingFounderDamInRefPopCount = 0
-
-for individual in IDlist:
-    current = individual
-    while MotherMap[current] != '0':
-        current = MotherMap[current]
-    if GenderMap[current] == Female_gender:  # accounting for the case of founder sire
-        IndividualToFounderDamMap[individual] = current
-    else:
-        IndividualToFounderDamMap[individual] = '0'
-        IndividualsMissingFounderDamList.append(individual)
-        if individual in ReferencePopulationList:
-            IndividualsMissingFounderDamInRefPopCount += 1
-
-for i in FounderDamsList:
-    DamLineAllInRefPopCountMap[i] = 0
-    DamLineFemaleInRefPopCountMap[i] = 0
-for individual in ReferencePopulationList:
-    current = IndividualToFounderDamMap[individual]
-    if current == '0':
-        continue
-    DamLineAllInRefPopCountMap[current] += 1
-    if GenderMap[individual] == Female_gender:
-        DamLineFemaleInRefPopCountMap[current] += 1
-        if current not in FounderDamLineInRefPopList:
-            FounderDamLineInRefPopList.append(current)
-        if current in FounderDamLineWithOnlyMalesInRefPopList:
-            FounderDamLineWithOnlyMalesInRefPopList.remove(current)
-    else:
-        if current not in FounderDamLineWithOnlyMalesInRefPopList:
-            if current not in FounderDamLineInRefPopList:
-                FounderDamLineWithOnlyMalesInRefPopList.append(current)
-    if individual in HaplotypeMap:
-        if current not in DamLineHaplotypeMap:
-            DamLineHaplotypeMap[current] = HaplotypeMap[individual]
-        if GenderMap[individual] == Female_gender:
-            if current not in FounderDamLineWithSampledFemaleInRefPopList:
-                FounderDamLineWithSampledFemaleInRefPopList.append(current)
-
-DamLinesWithSamplesInRefPopHaplotypeMap = {}
-DamLinesWithSamplesInRefPopCountMap = {}
-DamLinesWithFemaleSamplesInRefPopCountMap = {}
-for i in FounderDamLineInRefPopList:
-    DamLinesWithSamplesInRefPopCountMap[i] = 0
-    DamLinesWithFemaleSamplesInRefPopCountMap[i] = 0
-for i in FounderDamLineWithOnlyMalesInRefPopList:
-    DamLinesWithSamplesInRefPopCountMap[i] = 0
-for individual in HaplotypedList:
-    if individual in ReferencePopulationList:
-        if IndividualToFounderDamMap[individual] not in DamLinesWithSamplesInRefPopHaplotypeMap:
-            DamLinesWithSamplesInRefPopHaplotypeMap[IndividualToFounderDamMap[individual]] = HaplotypeMap[individual]
-            DamLinesWithSamplesInRefPopCountMap[IndividualToFounderDamMap[individual]] += 1
-            if GenderMap[individual] == Female_gender:
-                DamLinesWithFemaleSamplesInRefPopCountMap[IndividualToFounderDamMap[individual]] += 1
-        else:
-            DamLinesWithSamplesInRefPopCountMap[IndividualToFounderDamMap[individual]] += 1
-            if GenderMap[individual] == Female_gender:
-                DamLinesWithFemaleSamplesInRefPopCountMap[IndividualToFounderDamMap[individual]] += 1
-
-OneSampleCount = 0
-for i in DamLinesWithSamplesInRefPopCountMap:
-    if DamLinesWithSamplesInRefPopCountMap[i] == 1:
-        OneSampleCount += 1
-
-SamplesInRefPopCount = 0
-SamplesInRefPopFemaleCount = 0
-for i in range(len(HaplotypedList)):
-    if HaplotypedList[i] in ReferencePopulationList:
-        SamplesInRefPopCount += 1
-        if GenderMap[HaplotypedList[i]] == Female_gender:
-            SamplesInRefPopFemaleCount += 1
-
-DamLineMembershipCountMap = {}
-for i in FounderDamsList:
-    DamLineMembershipCountMap[i] = 0
-for individual in IDlist:
-    if IndividualToFounderDamMap[individual] != '0':
-        DamLineMembershipCountMap[IndividualToFounderDamMap[individual]] += 1
-
-damlineout1 = open('OutputStat_DamLinesWithFemalesInRefPop.txt', 'w')
-for fdam in FounderDamLineInRefPopList:
-    damlineout1.write(fdam + ': no. of desc. in ref. pop. = ' + '%s' % DamLineAllInRefPopCountMap[fdam])
-    if fdam in DamLinesWithSamplesInRefPopHaplotypeMap:
-        damlineout1.write('; no. of samples = ' + '%s' % DamLinesWithSamplesInRefPopCountMap[fdam] + ': F = ' + '%s' % DamLinesWithFemaleSamplesInRefPopCountMap[fdam] + ', M = ' + '%s' % (DamLinesWithSamplesInRefPopCountMap[fdam]-DamLinesWithFemaleSamplesInRefPopCountMap[fdam]) + '; haplotype = ' + DamLinesWithSamplesInRefPopHaplotypeMap[fdam] + '\n')
-    else:
-        damlineout1.write('\n')
-
-damlineout2 = open('OutputStat_DamLinesWithOnlyMalesInRefPop.txt', 'w')
-if len(FounderDamLineWithOnlyMalesInRefPopList) == 0:
-    damlineout2.write('There are no founder dams with only male descendants in reference population.\n')
-for fdam in FounderDamLineWithOnlyMalesInRefPopList:
-    damlineout2.write(fdam + ': no. of male desc. in ref. pop. = ' + '%s' % DamLineAllInRefPopCountMap[fdam])
-    if fdam in DamLinesWithSamplesInRefPopHaplotypeMap:
-        damlineout1.write('; no. of samples = ' + '%s' % DamLinesWithSamplesInRefPopCountMap[fdam] +'; haplotype = ' + DamLinesWithSamplesInRefPopHaplotypeMap[fdam] + '\n')
-    else:
-        damlineout1.write('\n')
-
-damlineout1.close()
-damlineout2.close()
-
-damlineout3 = open('OutputStat_DamLineMembershipAllInRefPop.txt', 'w')
-damlineout3.write('founder dam:individual in dam line and in reference population\n')
-damlineout4 = open('OutputStat_DamLineMembershipFemaleOnlyInRefPop.txt', 'w')
-damlineout4.write('founder dam:female individual in dam line and in reference population\n')
-damlineout5 = open('OutputStat_DamLineMembership_1.txt', 'w')
-damlineout6 = open('OutputStat_DamLineMembership_2.txt', 'w')
-damlineout6.write('founder dam:individual in dam line\n')
-for fdam in sorted(DamLineMembershipCountMap, key=DamLineMembershipCountMap.__getitem__, reverse=True):
-    if fdam in DamLineHaplotypeMap:
-        damlineout5.write("founder dam: " + fdam + "     number of individuals in dam line = " + "%s" % (DamLineMembershipCountMap[fdam]) + "       haplotype = " + DamLineHaplotypeMap[fdam] + "\n")
-    else:
-        damlineout5.write("founder dam: " + fdam + "     number of individuals in dam line = " + "%s" % (DamLineMembershipCountMap[fdam]) + "       haplotype = N/A\n")
+    ReferencePopulationList = []
+    FemalesInReferencePopulationList = []
     for individual in IDlist:
-        if IndividualToFounderDamMap[individual] == fdam:
-            damlineout5.write(individual + "\n")
-            damlineout6.write(fdam + ":" + individual + "\n")
-            if individual in ReferencePopulationList:
-                damlineout3.write(fdam + ':' + individual + '\n')
+        if YobMap[individual] == 'MISSING_YEAR':
+            continue
+        if FirstRefYear <= int(YobMap[individual]) <= LastRefYear:
+            if Lineage == 'paternal':
+                if GenderMap[individual] == Male_gender:
+                    ReferencePopulationList.append(individual)
+            elif Lineage == 'maternal':
+                ReferencePopulationList.append(individual)
                 if GenderMap[individual] == Female_gender:
-                    damlineout4.write(fdam + ':' + individual + '\n')
-damlineout3.close()
-damlineout4.close()
-damlineout5.close()
-damlineout6.close()
+                    FemalesInReferencePopulationList.append(individual)
+
+    if len(ReferencePopulationList) == 0:
+        if mode == "gui":
+            messagebox.showerror("ERROR", "ERROR: There are no individuals in the reference population!")
+            return
+        elif mode == "cl":
+            sys.stderr.write("ERROR: There are no individuals in the reference population!\n")
+            sys.exit()
+
+    FounderList = [i for i in IDlist if (ParentMap[i] == '0') and GenderMap[i] == Gender]
+
+    FounderLineInRefPopList = set()
+    FounderLineWithSampledInRefPopList = set()
+    FounderDamLineWithOnlyMalesInRefPopList = set()
+    IndividualToFounderMap = {}
+    LineAllInRefPopCountMap = {}
+    DamLineFemaleInRefPopCountMap = {}
+    LineHaplotypeMap = {}
+    IndividualsMissingFounderList = []
+    IndividualsMissingFounderInRefPopCount = 0
+
+    for individual in IDlist:
+        current = individual
+        try:
+            while ParentMap[current] != '0':
+                current = ParentMap[current]
+        except KeyError:
+            pass
+
+        try:
+            # accounting for the case of founder sire
+            if GenderMap[current] == Gender:  
+                IndividualToFounderMap[individual] = current
+            else:
+                IndividualToFounderMap[individual] = '0'
+                IndividualsMissingFounderList.append(individual)
+                if individual in ReferencePopulationList:
+                    IndividualsMissingFounderInRefPopCount += 1
+        except KeyError:
+            IndividualToFounderMap[individual] = current
+            IndividualsMissingFounderList.append(individual)
+            if individual in ReferencePopulationList:
+                IndividualsMissingFounderInRefPopCount += 1
+            pass
+
+    for i in FounderList:
+        LineAllInRefPopCountMap[i] = 0
+        if Lineage == 'maternal':
+            DamLineFemaleInRefPopCountMap[i] = 0
+
+    for individual in ReferencePopulationList:
+        current = IndividualToFounderMap[individual]
+        if current == '0':
+            continue
+        LineAllInRefPopCountMap[current] += 1
+        if GenderMap[individual] == Gender:
+            if Lineage == 'maternal':
+                DamLineFemaleInRefPopCountMap[current] += 1
+            FounderLineInRefPopList.add(current)
+            if Lineage == 'maternal':
+                FounderDamLineWithOnlyMalesInRefPopList.discard(current)
+        else:
+            if current not in FounderLineInRefPopList:
+                FounderDamLineWithOnlyMalesInRefPopList.add(current)
+        if individual in HaplotypeMap:
+            if current not in LineHaplotypeMap:
+                LineHaplotypeMap[current] = HaplotypeMap[individual]
+            if GenderMap[individual] == Gender:
+                FounderLineWithSampledInRefPopList.add(current)
+
+    LinesWithSamplesInRefPopHaplotypeMap = {}
+    LinesWithSamplesInRefPopCountMap = {}
+    DamLinesWithFemaleSamplesInRefPopCountMap = {}
+    for i in FounderLineInRefPopList:
+        LinesWithSamplesInRefPopCountMap[i] = 0
+        if Lineage == 'maternal':
+            DamLinesWithFemaleSamplesInRefPopCountMap[i] = 0
+    for i in FounderDamLineWithOnlyMalesInRefPopList:
+        LinesWithSamplesInRefPopCountMap[i] = 0
+    for individual in HaplotypedList:
+        if individual in ReferencePopulationList:
+            if IndividualToFounderMap[individual] not in LinesWithSamplesInRefPopHaplotypeMap:
+                LinesWithSamplesInRefPopHaplotypeMap[IndividualToFounderMap[individual]] = HaplotypeMap[individual]
+                LinesWithSamplesInRefPopCountMap[IndividualToFounderMap[individual]] += 1
+                if GenderMap[individual] == Female_gender:
+                    DamLinesWithFemaleSamplesInRefPopCountMap[IndividualToFounderMap[individual]] += 1
+            else:
+                LinesWithSamplesInRefPopCountMap[IndividualToFounderMap[individual]] += 1
+                if GenderMap[individual] == Female_gender:
+                    DamLinesWithFemaleSamplesInRefPopCountMap[IndividualToFounderMap[individual]] += 1
+
+    SamplesInRefPopCount = 0
+    SamplesInRefPopFemaleCount = 0
+    for individual in HaplotypedList:
+        if individual in ReferencePopulationList:
+            SamplesInRefPopCount += 1
+            if GenderMap[individual] == Female_gender:
+                SamplesInRefPopFemaleCount += 1
+
+    LineMembershipCountMap = {}
+    for i in FounderList:
+        LineMembershipCountMap[i] = 0
+    for individual in IDlist:
+        if IndividualToFounderMap[individual] != '0':
+            LineMembershipCountMap[IndividualToFounderMap[individual]] += 1
+
+    if Lineage == 'maternal':
+        line = 'dam'
+        with open('OutputStat_DamLinesWithFemalesInRefPop.txt', 'w') as damlineout1, \
+             open('OutputStat_DamLinesWithOnlyMalesInRefPop.txt', 'w') as damlineout2:
+
+            for fdam in FounderLineInRefPopList:
+                damlineout1.write(f'{fdam}: no. of desc. in ref. pop. = {LineAllInRefPopCountMap[fdam]}\n')
+                if fdam in LinesWithSamplesInRefPopHaplotypeMap:
+                    damlineout1.write(f'; no. of samples = {LinesWithSamplesInRefPopCountMap[fdam]}:')
+                    damlineout1.write(f' F = {DamLinesWithFemaleSamplesInRefPopCountMap[fdam]},; haplotype = {LinesWithSamplesInRefPopHaplotypeMap[fdam]}')
+                    damlineout1.write(f' M = {(LinesWithSamplesInRefPopCountMap[fdam]-DamLinesWithFemaleSamplesInRefPopCountMap[fdam])};')
+                    damlineout1.write(f' haplotype = {LinesWithSamplesInRefPopHaplotypeMap[fdam]}\n')
+                else:
+                    damlineout1.write('\n')
+ 
+            if len(FounderDamLineWithOnlyMalesInRefPopList) == 0:
+                damlineout2.write('There are no founder dams with only male descendants in reference population.\n')
+            for fdam in FounderDamLineWithOnlyMalesInRefPopList:
+                damlineout2.write(f'{fdam}: no. of male desc. in ref. pop. = {LineAllInRefPopCountMap[fdam]}')
+                if fdam in LinesWithSamplesInRefPopHaplotypeMap:
+                    damlineout1.write('; no. of samples = {DamLinesWithSamplesInRefPopCountMap[fdam]}; haplotype = {LinesWithSamplesInRefPopHaplotypeMap[fdam]}\n')
+                else:
+                    damlineout1.write('\n')
+    elif Lineage == 'paternal':
+        line = 'sire'
+        with open('OutputStat_SireLinesWithMalesInRefPop.txt', 'w') as sirelineout1:
+
+            for fsire in FounderLineInRefPopList:
+                sirelineout1.write(f'{fsire}: no. of desc. in ref. pop. = {LineAllInRefPopCountMap[fsire]}\n')
+            if fsire in LinesWithSamplesInRefPopHaplotypeMap:
+                sirelineout1.write(f'; no. of samples = {LinesWithSamplesInRefPopCountMap[fsire]}')
+                sirelineout1.write(f'; haplotype = {LinesWithSamplesInRefPopHaplotypeMap[fsire]}\n')
+            else:
+                sirelineout1.write('\n')
+
+    with open(f'OutputStat_{line.capitalize()}LineMembershipAllInRefPop.txt', 'w') as damlineout3, \
+         open(f'OutputStat_{line.capitalize()}LineMembership_1.txt', 'w') as damlineout5, \
+         open(f'OutputStat_{line.capitalize()}LineMembership_2.txt', 'w') as damlineout6:
+
+        damlineout3.write(f'founder {line}:individual in dam line and in reference population\n')
+        damlineout6.write(f'founder {line}:individual in {line} line\n')
+
+        for fdam in sorted(LineMembershipCountMap, key=LineMembershipCountMap.__getitem__, reverse=True):
+            if fdam in LineHaplotypeMap:
+                damlineout5.write(f"founder {line}: {fdam}     number of individuals in {line} line = {LineMembershipCountMap[fdam]}       haplotype = {LineHaplotypeMap[fdam]}\n")
+            else:
+                damlineout5.write(f"founder {line}: {fdam}     number of individuals in {line} line = {LineMembershipCountMap[fdam]}       haplotype = N/A\n")
+
+            offspring = [key for key, value in IndividualToFounderMap.items() if value == fdam]
+            for individual in offspring:
+                damlineout5.write(f"{individual}\n")
+                damlineout6.write(f"{fdam}:{individual}\n")
+                if individual in ReferencePopulationList:
+                    damlineout3.write(f'{fdam}:{individual}\n')
+
+    if Lineage == 'maternal':
+        with open('OutputStat_DamLineMembershipFemaleOnlyInRefPop.txt', 'w') as damlineout4:
+            damlineout4.write('founder dam:female individual in dam line and in reference population\n')
+            for fdam in sorted(LineMembershipCountMap, key=LineMembershipCountMap.__getitem__, reverse=True):
+                offspring = [key for key, value in IndividualToFounderMap.items() if value == fdam]
+                for individual in offspring:
+                    if (individual in ReferencePopulationList) and (GenderMap[individual] == Female_gender):
+                        damlineout4.write(f'{fdam}:{individual}\n')
+    return

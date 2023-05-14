@@ -1,11 +1,11 @@
-# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn.
+# This code is a part of Maternal Genealogy Lineage Analyser - MaGelLAn-v2.0demo.
 # MaGelLAn is an open source software and it is free for non-commercial use, as long as it is properly referenced.
-# Authors are Ino Curik, Dalibor Hršak, Ivan Katanić and Strahil Ristov
+# Authors are Ino Curik, Dalibor Hrsak, and Strahil Ristov
 
-import argparse
-import math
 import time
+import sys
 from collections import defaultdict
+from tkinter import messagebox
 
 
 def calc_dists(x, E, dist, parent=-1, cur_dist=0):
@@ -154,14 +154,14 @@ def dp_solve(E, C, K):
     return (chosen, total_dists)
 
 
-def forest_solve(E, C,IndividualToFounderDamMap, K, RemainingToDoAvailablePerDamLineMap,tree_solver):
+def forest_solve(E, C,IndividualToFounderDamMap, RemainingToDoAvailablePerDamLineMap,tree_solver):
     """
     Takes a forest, and a function that solve problem on a tree (e.g. greedy_solve or dp_solve).
     Splits K proportionaly among trees in the forest and solves each of them separately
     using tree_solver. Usually it won't be possible to perfectly split K chosen nodes, so
     number of chosen nodes may be less than K.
     """
-    N = len(E)
+
     V = list(sorted(E.keys()))
     visited = set()
     chosen = {}
@@ -186,8 +186,6 @@ def forest_solve(E, C,IndividualToFounderDamMap, K, RemainingToDoAvailablePerDam
                 for y in E[x]:
                     dfs(y)
         dfs(r)
-
-        N_r = len(component)
 
         if IndividualToFounderDamMap[r] in RemainingToDoAvailablePerDamLineMap:
             K_r = RemainingToDoAvailablePerDamLineMap[IndividualToFounderDamMap[r]]
@@ -215,7 +213,7 @@ def forest_solve(E, C,IndividualToFounderDamMap, K, RemainingToDoAvailablePerDam
             chosen[IndividualToFounderDamMap[r]] = (r,)
             numberOfChosen += 1
 
-    #accoutn for the case of a single individual in line
+    #account for the case of a single individual in line
     if numberOfChosen < sum(RemainingToDoAvailablePerDamLineMap.values()):
         omittedFounders = set(chosen.keys()) ^ set(RemainingToDoAvailablePerDamLineMap.keys())
         for omittedFounder in omittedFounders:
@@ -228,8 +226,7 @@ def forest_solve(E, C,IndividualToFounderDamMap, K, RemainingToDoAvailablePerDam
 
 def preprocess_input(ParentMap):
     E = defaultdict(list)
-    C = set()
-    reading_edges = True
+
     for key, value in ParentMap.items():
         if value == '0':
             continue
@@ -256,7 +253,7 @@ Set {x1, .., x_C}, if included, restricts the choice of solution
 nodes to that set. If omitted, any node can be chosen.
 """
 
-def fastSampler(ParentMap,C,IndividualToFounderDamMap,K,RemainingToDoAvailablePerDamLineMap,method):
+def fastSampler(ParentMap,C,IndividualToFounderDamMap,HaplotypedList,RemainingToDoAvailablePerDamLineMap,method,mode):
 
     solver = None
     if method == 'greedy':
@@ -268,12 +265,16 @@ def fastSampler(ParentMap,C,IndividualToFounderDamMap,K,RemainingToDoAvailablePe
 
     E = preprocess_input(ParentMap)
     C = set(C)
+    C.difference_update(set(HaplotypedList))
     start = time.time()
-    (chosen, total_dist) = forest_solve(E,C,IndividualToFounderDamMap,K,RemainingToDoAvailablePerDamLineMap,solver)
+    (chosen, total_dist) = forest_solve(E,C,IndividualToFounderDamMap,RemainingToDoAvailablePerDamLineMap,solver)
     end = time.time()
     elapsed = end - start
-    print(method.upper(), ": ")
-    print("\tscore: ", total_dist)
-    print("\ttime: %8.6f" % elapsed)
+    message = f"{method.upper()}:\n\tscore: {total_dist}\n\ttime: {elapsed:8.6f}\n"
+    if mode == "gui":
+        messagebox.showinfo("Sampling finished", message)
+    elif mode == "cl":
+        sys.stdout.write("Sampling finished\n")
+        sys.stdout.write(message)    
 
     return chosen
