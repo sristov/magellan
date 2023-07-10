@@ -164,7 +164,6 @@ class MagellanCL():
                                           self.MotherMap,
                                           self.HaplotypeMap,
                                           self.HaplotypedList,
-                                          self.HaplotypeNamesList,
                                           self.input_parameters["imput_options"]["reliability"],
                                           "cl")
 

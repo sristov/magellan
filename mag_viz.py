@@ -218,26 +218,38 @@ def line_print(data, ID, startyear, endyear, gen_before, gen_after, lineage, mod
     if gender == '1' and ancestor_line == 'father':
         data = data.loc[data['gender'] == gender]
 
-    if (list(data[data.ID == ID][ancestor_line])[0] != '0'):
-        current = ID
-        ancestor = list(data[data.ID == current][ancestor_line])[0]
-        while ancestor != '0':
-            current = ancestor
-            # check if current is defined in ID column, if not add it
-            if len(list(data[data.ID == current][ancestor_line])):
-                ancestor = list(data[data.ID == current][ancestor_line])[0]
-            else:
-                ancestor = '0'
-                new_row = pd.DataFrame({'ID':[current],'father':['0'],'mother':['0'],'gender':[gender1],'YOB':['0']})
-                data = pd.concat([data,new_row],ignore_index=True)
-        founder = current
-        message = f"Individual {ID} is not a founder in the {str_gender} line.\nThe founder is {founder}."
-        if mode == "gui":
-            messagebox.showinfo("INFO", message)
-        elif mode == "cl":
-            sys.stdout.write(f"INFO: {message}\n")
+    # check if ID is defined in ID column
+    if len(list(data[data.ID == ID][ancestor_line])):
+        if (list(data[data.ID == ID][ancestor_line])[0] != '0'):
+            current = ID
+            ancestor = list(data[data.ID == current][ancestor_line])[0]
+            while ancestor != '0':
+                current = ancestor
+                # check if current is defined in ID column, if not add it
+                if len(list(data[data.ID == current][ancestor_line])):
+                    ancestor = list(data[data.ID == current][ancestor_line])[0]
+                else:
+                    ancestor = '0'
+                    new_row = pd.DataFrame({'ID':[current],'father':['0'],'mother':['0'],'gender':[gender1],'YOB':['0']})
+                    data = pd.concat([data,new_row],ignore_index=True)
+            founder = current
+            message = f"Individual {ID} is not a founder in the {str_gender} line.\nThe founder is {founder}."
+            if mode == "gui":
+                messagebox.showinfo("INFO", message)
+            elif mode == "cl":
+                sys.stdout.write(f"INFO: {message}\n")
+        else:
+            founder = ID
+            message = f"Individual {ID} is the founder in the {str_gender} line."
+            if mode == "gui":
+                messagebox.showinfo("INFO", message)
+            elif mode == "cl":
+                sys.stdout.write(f"INFO: {message}\n")
     else:
         founder = ID
+        # add missing founder entry
+        new_row = pd.DataFrame({'ID':[ID],'father':['0'],'mother':['0'],'gender':[gender1],'YOB':['0']})
+        data = pd.concat([data,new_row],ignore_index=True)
         message = f"Individual {ID} is the founder in the {str_gender} line."
         if mode == "gui":
             messagebox.showinfo("INFO", message)

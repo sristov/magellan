@@ -434,7 +434,7 @@ def check_haplotype_conflicts(IDlist,ParentMap,HaplotypeMap,HaplotypedList,Haplo
 
     return
 
-def impute_haplotype(IDlist,Lineage,GenderMap,ParentMap,HaplotypeMap,HaplotypedList,HaplotypeNamesList,Reliability,mode):
+def impute_haplotype(IDlist,Lineage,GenderMap,ParentMap,HaplotypeMap,HaplotypedList,Reliability,mode):
 
     if not len(HaplotypedList):
         if mode == "gui":

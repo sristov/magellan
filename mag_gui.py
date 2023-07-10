@@ -1096,8 +1096,6 @@ class MagellanGUI(tk.Tk):
                                           self.MotherMap,
                                           self.HaplotypeMap,
                                           self.HaplotypedList,
-                                          self.HaplotypeNamesList,
-                                          self.VerifObject.get(),
                                           self.ImputReliability.get(),
                                           "gui")
 

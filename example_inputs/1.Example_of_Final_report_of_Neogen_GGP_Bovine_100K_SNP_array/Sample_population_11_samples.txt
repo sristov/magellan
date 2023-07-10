@@ -1,0 +1,12 @@
+Sample_ID	Population
+9_CSC	Cika
+175_CCHF	Holstein
+176_CCHF	Holstein
+212_CCB	Busa
+77_CCHF	Holstein
+4_CAM	Murbodner
+5_CGKO	Katerinis_Outras
+25_CCB	Busa
+52_CCB	Busa
+152_CCSSP	Slavonian_Syrmian_Podolian
+ROM553	Romagnola

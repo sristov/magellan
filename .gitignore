@@ -3,6 +3,12 @@ push.sh
 *.tsv
 *.txt
 !requirements.txt
+!final_report_11_samples.txt
+!Sample_population_11_samples.txt
+!SNP_Map.txt
+!SNPs_310.txt
+!recoded_busa_pedigree_SNP_string.txt
+!subset_recode_busa_founder_1020.txt
 *.xlsx
 *.exe
 *.json
